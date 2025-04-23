@@ -2,8 +2,8 @@ name: Deploy to AWS Lambda via ECR
 
 on:
   push:
-    branches: [main]  
-    
+    branches: [main]
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -11,6 +11,19 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run tests
+      run: pytest
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
@@ -41,3 +54,45 @@ jobs:
           --function-name $FUNCTION_NAME \
           --image-uri $ECR_REPO:latest \
           --region $AWS_REGION
+
+    - name: Check health endpoint
+      run: |
+        curl -f https://102irwqmk0.execute-api.eu-central-1.amazonaws.com/health || exit 1
+
+    - name: Notify via Email on Success
+      if: success()
+      run: |
+        python - <<EOF
+        import smtplib
+        from email.message import EmailMessage
+
+        msg = EmailMessage()
+        msg["Subject"] = "Lambda Deployment Successful"
+        msg["From"] = "${{ secrets.EMAIL_ADDRESS }}"
+        msg["To"] = "${{ secrets.EMAIL_ADDRESS }}"
+        msg.set_content("Your AWS Lambda function '${{ secrets.LAMBDA_FUNCTION_NAME }}' was deployed successfully.")
+
+        with smtplib.SMTP("${{ secrets.EMAIL_HOST }}", ${{ secrets.EMAIL_PORT }}) as server:
+            server.starttls()
+            server.login("${{ secrets.EMAIL_ADDRESS }}", "${{ secrets.EMAIL_PASSWORD }}")
+            server.send_message(msg)
+        EOF
+
+    - name: Notify via Email on Failure
+      if: failure()
+      run: |
+        python - <<EOF
+        import smtplib
+        from email.message import EmailMessage
+
+        msg = EmailMessage()
+        msg["Subject"] = "Lambda Deployment Failed"
+        msg["From"] = "${{ secrets.EMAIL_ADDRESS }}"
+        msg["To"] = "${{ secrets.EMAIL_ADDRESS }}"
+        msg.set_content("Deployment of '${{ secrets.LAMBDA_FUNCTION_NAME }}' failed during GitHub Actions CI/CD.")
+
+        with smtplib.SMTP("${{ secrets.EMAIL_HOST }}", ${{ secrets.EMAIL_PORT }}) as server:
+            server.starttls()
+            server.login("${{ secrets.EMAIL_ADDRESS }}", "${{ secrets.EMAIL_PASSWORD }}")
+            server.send_message(msg)
+        EOF
