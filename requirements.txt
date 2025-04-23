@@ -2,3 +2,4 @@ Flask==2.2.5
 requests==2.31.0
 aws-wsgi
 pytest
+werkzeug<3.0.0
