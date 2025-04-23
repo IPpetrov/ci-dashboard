@@ -3,7 +3,6 @@ from .utils import check_status
 
 main = Blueprint('main', __name__)
 
-# Define your projects here
 projects = [
     {"name": "Cloud Resume", "url": "https://www.ip-petrov.com/"},
     {"name": "Jira Helper", "url": "https://jira-109573300692.europe-west3.run.app/"}
