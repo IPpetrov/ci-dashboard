@@ -7,23 +7,20 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <style>
     .status-online {
-      color: green;
+      color: #28a745; 
     }
     .status-error {
-      color: red;
+      color: #dc3545; 
     }
     .status-unknown {
-      color: gray;
-    }
-    .refresh-btn {
-      margin-top: 20px;
+      color: #6c757d; 
     }
     .status-container {
       margin-bottom: 10px;
     }
   </style>
 </head>
-<body class="p-5 w-50">
+<body class="p-5 w-50 m-auto">
   <h1 class="mb-4 text-center">CI/CD Project Status Dashboard</h1>
 
   <!-- Refresh Button -->
@@ -33,16 +30,60 @@
 
   <!-- Project List -->
   <ul class="list-group mt-4">
-    {% for project, status in projects %}
-      <li class="list-group-item d-flex justify-content-between align-items-center status-container">
-        <strong>{{ project.name }}</strong>
-        <a href="{{ project.url }}" target="_blank">{{ project.url }}</a>
-        <span class="badge 
-            {% if 'Online' in status %} status-online 
-            {% elif 'Unreachable' in status %} status-error 
-            {% else %} status-unknown {% endif %}">
-            {{ status }}
-        </span>
+    {% for project, status, github in projects %}
+      <li class="list-group-item status-container">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <strong>{{ project.name }}</strong><br>
+            <a href="{{ project.url }}" target="_blank">{{ project.url }}</a>
+          </div>
+          <div>
+            <span class="badge p-2
+                {% if 'Online' in status %} bg-success
+                {% elif 'Unreachable' in status %} bg-danger
+                {% else %} bg-secondary {% endif %}">
+              {{ status }}
+            </span>
+          </div>
+        </div>
+
+        <!-- GitHub Actions Status -->
+        {% if github.get("error") %}
+          <div class="mt-2 text-danger">
+            <strong>Error:</strong> {{ github.error }}
+            {% if github.cached %}
+              <span class="badge bg-secondary ms-2">Cached</span>
+            {% endif %}
+          </div>
+        {% elif github.runs is defined and github.runs|length == 0 %}
+          <div class="mt-2 text-warning">
+            <strong>No GitHub Actions found for this project.</strong>
+            {% if github.cached %}
+              <span class="badge bg-secondary ms-2">Cached</span>
+            {% endif %}
+          </div>
+        {% else %}
+          <div class="mt-2">
+            <h5>Recent GitHub Actions:</h5>
+            {% for run in github.runs %}
+              <div class="mt-2">
+                <strong>Commit Message:</strong> {{ run.commit_message }}<br>
+                <span class="badge bg-primary p-2">Status: {{ run.status }}</span>
+                <span class="badge p-2 
+                    {% if run.conclusion == 'success' %} bg-success
+                    {% elif run.conclusion == 'failure' %} bg-danger
+                    {% else %} bg-warning text-dark {% endif %}">
+                  Result: {{ run.conclusion }}
+                </span>
+                <span class="badge bg-secondary p-2">Last Updated: {{ run.updated_at }}</span>
+                <a class="btn btn-sm btn-outline-primary ms-2" href="{{ run.html_url }}" target="_blank">View on GitHub</a>
+              </div>
+            {% endfor %}
+            {% if github.cached %}
+              <div class="mt-2"><span class="badge bg-secondary">Showing cached results</span></div>
+            {% endif %}
+          </div>
+        {% endif %}
       </li>
     {% endfor %}
   </ul>
