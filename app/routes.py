@@ -8,12 +8,6 @@ projects = [
         "url": "https://www.ip-petrov.com/",
         "gh_owner": "IPpetrov",
         "gh_repo": "cloud-resume"
-    },
-    {
-        "name": "Jira Helper",
-        "url": "https://jira-109573300692.europe-west3.run.app/",
-        "gh_owner": "IPpetrov",
-        "gh_repo": "jira"
     }
 ]
 
